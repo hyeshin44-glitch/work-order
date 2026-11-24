@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>작업지시 관리</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login" class="login hidden">
+  <form id="loginForm" class="login-card">
+    <h1>작업지시 관리</h1>
+    <p>본인 이름을 입력하고 시작하세요.<br>비밀번호는 없습니다.</p>
+    <input id="loginName" type="text" placeholder="이름" autocomplete="off" maxlength="30" required>
+    <button type="submit" class="btn primary block">시작하기</button>
+  </form>
+</div>
+
+<header class="topbar">
+  <div class="brand">작업지시 관리</div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="input" class="active">작업지시 입력</button>
+    <button data-tab="manage">통합 관리</button>
+    <button data-tab="total">통합관리(총수량)</button>
+    <button data-tab="specs">규격</button>
+    <button data-tab="settings">설정</button>
+  </nav>
+  <div class="who"><span id="whoName"></span> 님 <button id="logoutBtn" class="link">이름 바꾸기</button></div>
+</header>
+<div id="demoBanner" class="demo hidden">미리보기 모드: 아직 수파베이스에 연결되지 않아 데이터가 이 브라우저에만 저장됩니다.</div>
+
+<main>
+<!-- 작업지시 입력 -->
+<section id="tab-input" class="tab-page active">
+  <div class="grid-input">
+    <div class="card form-card">
+      <h2 id="formTitle">새 작업지시 등록</h2>
+      <form id="orderForm" autocomplete="off">
+        <div class="row2">
+          <label>지시자<input id="f_instructor" type="text" readonly class="ro"></label>
+          <label>작업지시일<input id="f_order_date" type="text" readonly class="ro"></label>
+        </div>
+        <div class="row2">
+          <label>출고일<input id="f_ship_date" type="date"></label>
+          <label>주문자<input id="f_customer" type="text"></label>
+        </div>
+        <label>주문처<input id="f_destination" type="text"></label>
+        <div class="row2">
+          <label>품목<input id="f_item" type="text" list="itemList" placeholder="눌러서 선택"></label>
+          <label>아웃박스<input id="f_outbox" type="text"></label>
+        </div>
+        <div class="qty-box">
+          <div class="qty-title">수량 <span>(칸 이름의 숫자 = 한 묶음 개수)</span></div>
+          <div class="qty-grid" id="qtyGrid"></div>
+        </div>
+        <label>비고 <span class="hint">— 입력하거나, 칸을 눌러 기존 내용 선택</span><input id="f_memo" type="text" list="memoList"></label>
+        <div class="sum-box">
+          <div><span>총수량</span><b id="s_total">0</b></div>
+          <div><span>입수량</span><b id="s_per">-</b></div>
+          <div><span>작업박스</span><b id="s_box">-</b></div>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn primary grow" id="saveBtn">저장</button>
+          <button type="button" class="btn danger hidden" id="deleteBtn">삭제</button>
+          <button type="button" class="btn" id="resetFormBtn">초기화</button>
+        </div>
+      </form>
+      <datalist id="itemList"></datalist>
+      <datalist id="memoList"></datalist>
+    </div>
+
+    <div class="card list-card">
+      <h2>작업지시 목록 <span class="muted" id="listCount"></span></h2>
+      <div class="filters">
+        <label>출고일<select id="flt_ship"></select></label>
+        <label>지시자<select id="flt_inst"></select></label>
+        <label>완료여부<select id="flt_done"><option value="">전체</option><option value="0">미완료</option><option value="1">완료</option></select></label>
+        <label>작업진행중 여부<select id="flt_prog"><option value="">전체</option><option value="1">진행중</option><option value="0">진행중 아님</option></select></label>
+        <label>작업지시일<select id="flt_odate"></select></label>
+        <label class="grow">검색 (품목·주문자·주문처·비고)<input id="flt_q" type="search" placeholder="검색어"></label>
+        <button class="btn" id="fltReset">필터 초기화</button>
+      </div>
+      <div class="toolbar">
+        <span class="muted small">인쇄 방향</span>
+        <div class="seg" id="orient"><button data-o="portrait" class="on">세로</button><button data-o="landscape">가로</button></div>
+        <button class="btn dark" id="printBtn">인쇄</button>
+        <button class="btn" id="csvBtn">CSV 내려받기</button>
+        <span class="muted small">인쇄 : 미완료 &amp; 작업진행중 아닌 건만</span>
+      </div>
+      <div class="table-wrap tall"><table class="tbl" id="orderTable"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 통합 관리 -->
+<section id="tab-manage" class="tab-page">
+  <div class="card">
+    <h2>통합 관리 (최종관리자)</h2>
+    <div class="filters">
+      <label>작업지시일<select id="m_odate"></select></label>
+      <label>완료여부<select id="m_done"><option value="">전체</option><option value="0">미완료</option><option value="1">완료</option></select></label>
+      <button class="btn dark" id="m_print">인쇄</button>
+    </div>
+    <div class="stats" id="m_stats"></div>
+    <div class="table-wrap tall"><table class="tbl" id="m_table"></table></div>
+  </div>
+</section>
+
+<!-- 통합관리(총수량) -->
+<section id="tab-total" class="tab-page">
+  <div class="card">
+    <h2>통합관리 (총수량)</h2>
+    <div class="filters">
+      <label>작업지시일<select id="t_odate"></select></label>
+      <label>완료여부<select id="t_done"><option value="">전체</option><option value="0">미완료</option><option value="1">완료</option></select></label>
+      <button class="btn dark" id="t_print">인쇄</button>
+    </div>
+    <div class="table-wrap tall"><table class="tbl" id="t_table"></table></div>
+  </div>
+</section>
+
+<!-- 규격 -->
+<section id="tab-specs" class="tab-page">
+  <div class="grid-specs">
+    <div class="card">
+      <h2 id="specTitle">규격 등록</h2>
+      <form id="specForm" autocomplete="off">
+        <label>품명<input id="sp_name" type="text" required></label>
+        <label>규격<input id="sp_spec" type="text"></label>
+        <div class="row2">
+          <label>입수량<input id="sp_per" type="number" min="1"></label>
+          <label>포장박스(아웃박스)<input id="sp_outbox" type="text"></label>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn primary grow">저장</button>
+          <button type="button" class="btn" id="specReset">초기화</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>규격 목록 <span class="muted" id="specCount"></span></h2>
+      <div class="table-wrap tall"><table class="tbl" id="specTable"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 설정 -->
+<section id="tab-settings" class="tab-page">
+  <div class="grid-specs">
+    <div class="card">
+      <h2>내 이름</h2>
+      <p class="muted">지금 <b id="setName"></b> 이름으로 사용 중입니다. 작업지시를 저장하면 이 이름이 지시자로 들어갑니다.</p>
+      <button class="btn" id="changeNameBtn">이름 바꾸기</button>
+    </div>
+    <div class="card danger-card">
+      <h2>시즌 데이터 전체 삭제</h2>
+      <p class="muted">시즌이 끝나면 작업지시를 모두 지우고 새로 시작할 수 있습니다. 작업No.도 1번부터 다시 시작합니다. 지운 데이터는 되살릴 수 없으니 먼저 CSV로 내려받아 두세요.</p>
+      <div class="btn-row"><button class="btn" id="backupBtn">전체 작업지시 CSV 내려받기</button></div>
+      <label class="check"><input type="checkbox" id="resetSpecs"> 규격 목록도 함께 삭제</label>
+      <label>확인을 위해 <b>삭제</b> 라고 입력하세요<input id="resetConfirm" type="text" placeholder="삭제"></label>
+      <button class="btn danger block" id="resetBtn" disabled>전체 삭제</button>
+      <p class="muted small" id="resetInfo"></p>
+    </div>
+  </div>
+</section>
+</main>
+
+<div id="toast" class="toast"></div>
+<div id="printArea"></div>
+<style id="pageStyle"></style>
+
+<script src="config.js"></script>
+<script>
+  // 수파베이스 주소가 있을 때만 라이브러리를 불러옵니다.
+  if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL) {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"><\/script>');
+  }
+</script>
+<script src="app.js"></script>
+</body>
+</html>
