@@ -81,7 +81,7 @@ function sortSpecs(list){ return list.sort(function(a,b){ return a['품명']<b['
 var API = {
   getBootstrap: async function(){
     var o, s;
-    if(SB){ o=chk(await SB.from('work_orders').select('*').order('id')); s=chk(await SB.from('specs').select('*')); }
+    if(SB){ var both=await Promise.all([SB.from('work_orders').select('*').order('id'), SB.from('specs').select('*')]); o=chk(both[0]); s=chk(both[1]); }
     else { o=MEM.orders(); s=MEM.specs(); }
     return { rows:o.map(toRow), spec:sortSpecs(s.map(toSpec)) };
   },
@@ -789,8 +789,23 @@ $('#btnSpecReset').addEventListener('click', resetSpec);
 
 /* ----- 규격 : 양식 내려받기 / 파일로 한번에 등록 / 현재 규격 내려받기 ----- */
 var SPEC_HEAD=['품명','규격','입수량','포장박스'];
+/* 엑셀 기능(약 0.9MB)은 처음 열 때 느려지지 않도록 규격 파일을 쓸 때만 불러옴 */
+var XLSX_URL='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', _xlsxWait=null;
+function needXLSX(cb){
+  if(window.XLSX){ cb(); return; }
+  if(!_xlsxWait){
+    _xlsxWait=[]; busy(true);
+    var sc=document.createElement('script'); sc.src=XLSX_URL;
+    sc.onload=function(){ busy(false); var w=_xlsxWait; _xlsxWait=null; w.forEach(function(f){ f(); }); };
+    sc.onerror=function(){ busy(false); _xlsxWait=null; sc.remove(); toast('엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.', true); };
+    document.head.appendChild(sc);
+  }
+  _xlsxWait.push(cb);
+}
 function writeSpecBook(rows, filename){
-  if(!window.XLSX){ toast('엑셀 기능을 불러오지 못했습니다. 새로고침 해주세요.', true); return; }
+  needXLSX(function(){ writeSpecBookNow(rows, filename); });
+}
+function writeSpecBookNow(rows, filename){
   var ws=XLSX.utils.aoa_to_sheet([SPEC_HEAD].concat(rows));
   ws['!cols']=[{wch:22},{wch:26},{wch:8},{wch:10}];
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '규격');
@@ -804,7 +819,9 @@ $('#btnSpecExport').addEventListener('click', function(){
 $('#btnSpecUpload').addEventListener('click', function(){ $('#specFile').click(); });
 $('#specFile').addEventListener('change', function(e){
   var f=e.target.files[0]; e.target.value=''; if(!f) return;
-  if(!window.XLSX){ toast('엑셀 기능을 불러오지 못했습니다. 새로고침 해주세요.', true); return; }
+  needXLSX(function(){ readSpecFile(f); });
+});
+function readSpecFile(f){
   f.arrayBuffer().then(function(buf){
     var wb=XLSX.read(buf,{type:'array'});
     var ws=wb.Sheets[wb.SheetNames[0]];
@@ -828,7 +845,7 @@ $('#specFile').addEventListener('change', function(e){
     if(!confirm('규격 '+rows.length+'건을 등록할까요?\n새로 추가 '+(rows.length-upd)+'건, 기존 품명 수정 '+upd+'건')) return;
     call('upsertSpecs', rows, function(res){ afterSpec(res); toast('규격 '+rows.length+'건 등록했습니다.'); });
   }).catch(function(err){ toast('파일을 읽지 못했습니다: '+(err&&err.message?err.message:err), true); });
-});
+}
 
 /* ===================== 로그인(이름) / 시즌 전체 삭제 ===================== */
 function getSavedName(){ try{ return localStorage.getItem(NAME_KEY)||''; }catch(e){ return ''; } }
