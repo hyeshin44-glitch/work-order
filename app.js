@@ -222,7 +222,7 @@ function refreshFilters() {
   fillSelect($('#flt_inst'), uniq(state.orders.map(o => o.instructor)).sort((a, b) => a.localeCompare(b, 'ko')), '전체');
   const od = uniq(state.orders.map(o => o.order_date)).sort();
   ['#flt_odate', '#m_odate', '#t_odate'].forEach(s => fillSelect($(s), od, s === '#flt_odate' ? '전체' : '작업지시일 : 전체', fmtDate));
-  $('#itemList').innerHTML = state.specs.map(s => `<option value="${esc(s.name)}">`).join('');
+  $('#itemList').innerHTML = uniq(state.specs.map(s => s.name).concat(state.orders.map(o => o.item))).map(n => `<option value="${esc(n)}">`).join('');
   $('#memoList').innerHTML = uniq(state.orders.map(o => o.memo)).slice(0, 200).map(m => `<option value="${esc(m)}">`).join('');
 }
 function qtyHead() { return QN.map(n => `<th class="c">수량${n}<small>×${n}</small></th>`).join(''); }
