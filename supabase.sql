@@ -27,9 +27,13 @@ create table if not exists work_orders (
   memo        text default '',               -- 비고
   in_progress boolean not null default false, -- 작업진행중
   done        boolean not null default false, -- 완료
+  done_date   date,                          -- 완료일
   created_at  timestamptz default now(),
   updated_at  timestamptz default now()
 );
+
+-- 예전에 만든 표에 완료일 칸 추가
+alter table work_orders add column if not exists done_date date;
 
 create index if not exists work_orders_ship_date_idx on work_orders (ship_date);
 create index if not exists work_orders_order_date_idx on work_orders (order_date);

@@ -1,190 +1,377 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>작업지시 관리</title>
-<link rel="stylesheet" href="style.css">
+<style id="pageStyle">@page{size:A4 portrait;margin:12mm 10mm}</style>
+<style>
+:root{
+  --green:#155e40; --green-dark:#104b33; --green-soft:#e4efe8; --green-line:#c3ddcf; --green-bright:#a8e2c0;
+  --ink:#161811; --ink-soft:#2b2f24;
+  --paper:#f2efe8; --card:#fff; --line:#e5e1d7; --line2:#efece5;
+  --txt:#171911; --sub:#6a6e62; --muted:#9a9e91;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--txt);
+  font:13px/1.45 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",Pretendard,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.l{text-align:left}.r{text-align:right}.c{text-align:center}.nw{white-space:nowrap}
+.dim{color:var(--muted)}
+.sub{color:var(--sub)}
+
+/* ---------- top bar ---------- */
+header.top{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;
+  display:flex;align-items:center;gap:18px;padding:0 16px;height:52px;flex-wrap:wrap}
+header.top .brand{font-weight:700;letter-spacing:-.2px;font-size:15px;color:#fff}
+header.top nav{display:flex;gap:2px;flex:1;min-width:0;overflow:auto}
+.tab{background:transparent;border:0;color:#cdd2c4;padding:8px 14px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tab:hover{color:#fff;background:rgba(255,255,255,.08)}
+.tab.on{background:var(--green);color:#fff;font-weight:700}
+header.top .status{font-size:12px;color:#cdd2c4;white-space:nowrap}
+header.top .status b{color:#fff}
+header.top .status .lnk{background:none;border:0;color:var(--green-bright);text-decoration:underline;cursor:pointer;padding:0 0 0 6px;font-size:12px}
+
+.warnbar{background:var(--ink);color:#ffd9d1;padding:10px 16px;font-size:12px;border-bottom:2px solid var(--green)}
+
+main{padding:16px;max-width:100%;}
+.view{display:none}
+.view.on{display:block}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card + .card{margin-top:12px}
+.card h2{margin:0 0 10px;font-size:14px;letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
+.card h2 .bar{width:4px;height:14px;background:var(--green);border-radius:2px;display:inline-block}
+
+.split{display:grid;grid-template-columns:360px minmax(0,1fr);gap:12px;align-items:start}
+.split > *{min-width:0}
+@media(max-width:1000px){.split{grid-template-columns:1fr}}
+
+label.f{display:block;margin-bottom:8px}
+label.f > span{display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--green-bright);outline-offset:-1px;border-color:var(--green)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:0 8px}
+.qtybox{border:1px dashed var(--green-line);background:var(--green-soft);border-radius:10px;padding:10px 10px 2px;margin-bottom:8px}
+.qtybox .ttl{font-size:11px;font-weight:700;color:var(--green-dark);margin-bottom:6px}
+.qtybox label.f > span{color:var(--green-dark)}
+
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#f7f5ef}
+.btn.pri{background:var(--green);border-color:var(--green);color:#fff;font-weight:700}
+.btn.pri:hover{background:var(--green-dark)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.sm{padding:4px 8px;font-size:12px;border-radius:6px}
+.btn.danger{color:#a3271b;border-color:#e8cdc8}
+.btn.danger:hover{background:#fbf0ee}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.done{border-color:var(--green-line);color:var(--green-dark);background:var(--green-soft);font-weight:700}
+.btn.done.on{background:var(--green);border-color:var(--green);color:#fff}
+.btn.tog{border-radius:0}
+.btn.tog:first-child{border-radius:8px 0 0 8px}
+.btn.tog:last-child{border-radius:0 8px 8px 0;margin-left:-1px}
+.btn.tog.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+.tools .f{margin-bottom:0}
+.tools .grow{flex:1;min-width:140px}
+
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;max-height:70vh}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border-bottom:1px solid var(--line2);padding:6px 8px;text-align:center;white-space:nowrap}
+thead th{position:sticky;top:0;background:var(--ink);color:#fff;font-weight:600;z-index:2;font-size:11px;border-bottom:0}
+tbody tr:hover{background:#faf9f5}
+tbody tr.done{background:var(--green-soft)}
+tbody tr.done:hover{background:#d9e9e0}
+tbody tr.prog td{background:#fffbe9}
+tbody tr.prog.done td{background:var(--green-soft)}
+td.l,th.l{text-align:left}
+.pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;border:1px solid var(--line)}
+.pill.g{background:var(--green-soft);border-color:var(--green-line);color:var(--green-dark)}
+.pill.y{background:#fff3cd;border-color:#f0e0a8;color:#7a5c00}
+.no{font-variant-numeric:tabular-nums;font-weight:700;color:var(--green-dark)}
+input[type=checkbox].chk{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+input[type=checkbox].chk:disabled{cursor:not-allowed;opacity:.35}
+
+/* multi-select dropdown */
+.ms{position:relative}
+.ms .msbtn{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 9px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms .msmenu{display:none;position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:220px;max-height:280px;overflow:auto;
+  background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:8px}
+.ms.open .msmenu{display:block}
+.ms .msmenu .row{display:flex;align-items:center;gap:7px;padding:4px 5px;border-radius:6px;cursor:pointer}
+.ms .msmenu .row:hover{background:var(--green-soft)}
+.ms .msmenu .head{display:flex;gap:6px;margin-bottom:6px;border-bottom:1px solid var(--line2);padding-bottom:6px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:10px 12px}
+.kpi .k{font-size:11px;color:var(--sub);font-weight:600}
+.kpi .v{font-size:19px;font-weight:700;letter-spacing:-.4px;margin-top:2px}
+
+tr.secrow td{background:var(--ink);color:#fff;text-align:left;font-weight:700;font-size:12px}
+tr.sub td{background:var(--green-soft);font-weight:700;color:var(--green-dark)}
+tr.sub td.gap{background:#fff}
+tr.sub2 td{background:var(--green-line);font-weight:700;color:var(--green-dark)}
+tr.grand td{background:var(--ink);color:#fff;font-weight:700}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+  padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;z-index:200;max-width:80vw;font-size:13px}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{background:#8d2418}
+#loading{position:fixed;inset:0;background:rgba(242,239,232,.7);display:none;align-items:center;justify-content:center;z-index:300}
+#loading.on{display:flex}
+.spin{width:26px;height:26px;border:3px solid var(--green-line);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- login ---------- */
+#login{position:fixed;inset:0;background:var(--paper);z-index:400;display:none;align-items:center;justify-content:center;padding:16px}
+#login.on{display:flex}
+#login .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;width:100%;max-width:340px;text-align:center}
+#login h1{font-size:19px;margin:0 0 6px}
+#login p{color:var(--sub);margin:0 0 16px;font-size:13px}
+#login input{text-align:center;font-size:16px;margin-bottom:10px}
+#login .btn{width:100%;padding:10px}
+
+/* ---------- print ---------- */
+#printArea{display:none}
+.psheet{color:#000;font-size:11px}
+.psheet h1{font-size:16px;margin:0 0 4px;text-align:center}
+.psheet .meta{text-align:center;font-size:11px;margin-bottom:8px}
+.psheet table{width:100%;border-collapse:collapse}
+.psheet th,.psheet td{border:1px solid #000;padding:3px 4px;font-size:10.5px;text-align:center;color:#000}
+.psheet th{background:#e8e8e8;color:#000;position:static}
+.psheet th span{color:#000}
+.psheet td.l,.psheet th.l{text-align:left}
+.psheet td.r,.psheet th.r{text-align:right}
+.psheet tr.secrow td{background:#d8d8d8;color:#000;text-align:left;font-weight:700}
+.psheet tr.sub td{background:#f0f0f0;font-weight:700;color:#000}
+.psheet tr.sub td.gap{background:#fff}
+.psheet tr.sub2 td{background:#dfdfdf;font-weight:700;color:#000}
+.psheet tr.grand td{background:#c9c9c9;font-weight:700;color:#000}
+.psheet .dim{color:#666}
+@media print{
+  body{background:#fff}
+  body.printing #app{display:none}
+  body.printing #printArea{display:block}
+  #toast,#loading,#login{display:none!important}
+}
+</style>
 </head>
 <body>
-
-<!-- 로그인 -->
-<div id="login" class="login hidden">
-  <form id="loginForm" class="login-card">
+<div id="login">
+  <form class="box" id="loginForm" autocomplete="off">
     <h1>작업지시 관리</h1>
     <p>본인 이름을 입력하고 시작하세요.<br>비밀번호는 없습니다.</p>
-    <input id="loginName" type="text" placeholder="이름" autocomplete="off" maxlength="30" required>
-    <button type="submit" class="btn primary block">시작하기</button>
+    <input type="text" id="loginName" placeholder="이름" maxlength="30">
+    <button class="btn pri" type="submit">시작하기</button>
   </form>
 </div>
 
-<header class="topbar">
-  <div class="brand">작업지시 관리</div>
-  <nav class="tabs" id="tabs">
-    <button data-tab="input" class="active">작업지시 입력</button>
-    <button data-tab="manage">통합 관리</button>
-    <button data-tab="total">통합관리(총수량)</button>
-    <button data-tab="specs">규격</button>
-    <button data-tab="settings">설정</button>
-  </nav>
-  <div class="who"><span id="whoName"></span> 님 <button id="logoutBtn" class="link">이름 바꾸기</button></div>
-</header>
-<div id="demoBanner" class="demo hidden">미리보기 모드: 아직 수파베이스에 연결되지 않아 데이터가 이 브라우저에만 저장됩니다.</div>
+<div id="app">
+  <header class="top">
+    <div class="brand">작업지시 관리</div>
+    <nav>
+      <button class="tab on" data-view="input">작업지시 입력</button>
+      <button class="tab" data-view="total">통합 관리</button>
+      <button class="tab" data-view="sum">통합관리(총수량)</button>
+      <button class="tab" data-view="spec">규격</button>
+      <button class="tab" data-view="set">설정</button>
+    </nav>
+    <div class="status"><b id="whoName"></b> 님<button class="lnk" id="btnChangeName">이름 바꾸기</button></div>
+  </header>
+  <div id="warnBar" class="warnbar" style="display:none"></div>
 
-<main>
-<!-- 작업지시 입력 -->
-<section id="tab-input" class="tab-page active">
-  <div class="grid-input">
-    <div class="card form-card">
-      <h2 id="formTitle">새 작업지시 등록</h2>
-      <form id="orderForm" autocomplete="off">
-        <div class="row2">
-          <label>지시자<input id="f_instructor" type="text" readonly class="ro"></label>
-          <label>작업지시일<input id="f_order_date" type="text" readonly class="ro"></label>
-        </div>
-        <div class="row2">
-          <label>출고일<input id="f_ship_date" type="date"></label>
-          <label>주문자<input id="f_customer" type="text"></label>
-        </div>
-        <label>주문처<input id="f_destination" type="text"></label>
-        <div class="row2">
-          <label>품목<input id="f_item" type="text" list="itemList" placeholder="눌러서 선택"></label>
-          <label>아웃박스<input id="f_outbox" type="text"></label>
-        </div>
-        <div class="qty-box">
-          <div class="qty-title">수량 <span>(칸 이름의 숫자 = 한 묶음 개수)</span></div>
-          <div class="qty-grid" id="qtyGrid"></div>
-        </div>
-        <label>비고 <span class="hint">— 입력하거나, 칸을 눌러 기존 내용 선택</span><input id="f_memo" type="text" list="memoList"></label>
-        <div class="sum-box">
-          <div><span>총수량</span><b id="s_total">0</b></div>
-          <div><span>입수량</span><b id="s_per">-</b></div>
-          <div><span>작업박스</span><b id="s_box">-</b></div>
-        </div>
-        <div class="btn-row">
-          <button type="submit" class="btn primary grow" id="saveBtn">저장</button>
-          <button type="button" class="btn danger hidden" id="deleteBtn">삭제</button>
-          <button type="button" class="btn" id="resetFormBtn">초기화</button>
-        </div>
-      </form>
-      <datalist id="itemList"></datalist>
-      <datalist id="memoList"></datalist>
-    </div>
+  <main>
+    <!-- ============ 작업지시 입력 ============ -->
+    <section id="view-input" class="view on">
+      <div class="split">
+        <div>
+          <div class="card">
+            <h2><span class="bar"></span><span id="formTitle">새 작업지시 등록</span></h2>
+            <div class="grid2">
+              <label class="f"><span>지시자</span><input type="text" id="f_지시자" readonly tabindex="-1"
+                style="background:#f7f5ef;color:var(--sub)"></label>
+              <label class="f"><span>작업지시일</span><input type="text" id="f_일자" readonly tabindex="-1"
+                style="background:#f7f5ef;color:var(--sub)"></label>
+            </div>
+            <div class="grid2">
+              <label class="f"><span>출고일</span><input type="date" id="f_출고일"></label>
+              <label class="f"><span>주문자</span><input type="text" id="f_주문자"></label>
+            </div>
+            <label class="f"><span>주문처</span><input type="text" id="f_주문처"></label>
+            <div class="grid2">
+              <label class="f"><span>품목</span><input type="text" id="f_품목" list="itemList" autocomplete="off">
+                <datalist id="itemList"></datalist></label>
+              <label class="f"><span>아웃박스</span><input type="text" id="f_아웃박스" readonly tabindex="-1"></label>
+            </div>
 
-    <div class="card list-card">
-      <h2>작업지시 목록 <span class="muted" id="listCount"></span></h2>
-      <div class="filters">
-        <label>출고일<select id="flt_ship"></select></label>
-        <label>지시자<select id="flt_inst"></select></label>
-        <label>완료여부<select id="flt_done"><option value="">전체</option><option value="0">미완료</option><option value="1">완료</option></select></label>
-        <label>작업진행중 여부<select id="flt_prog"><option value="">전체</option><option value="1">진행중</option><option value="0">진행중 아님</option></select></label>
-        <label>작업지시일<select id="flt_odate"></select></label>
-        <label class="grow">검색 (품목·주문자·주문처·비고)<input id="flt_q" type="search" placeholder="검색어"></label>
-        <button class="btn" id="fltReset">필터 초기화</button>
+            <div class="qtybox">
+              <div class="ttl">수량 (칸 이름의 숫자 = 한 묶음 개수)</div>
+              <div class="grid4" id="qtyGrid"></div>
+            </div>
+
+            <label class="f"><span>비고 <span class="dim" style="font-weight:400">— 입력하거나, 칸을 눌러 기존 내용 선택</span></span>
+              <input type="text" id="f_비고" list="memoList" autocomplete="off">
+              <datalist id="memoList"></datalist></label>
+
+            <div class="card" style="background:var(--green-soft);border-color:var(--green-line);padding:9px 11px;margin-top:2px">
+              <div style="display:flex;justify-content:space-between;font-size:12px">
+                <span class="sub">총수량</span><b id="calc_total">0</b></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px">
+                <span class="sub">입수량</span><b id="calc_ipsu">-</b></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px">
+                <span class="sub">작업박스</span><b id="calc_box">-</b></div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn pri" id="btnSave" style="flex:1">저장</button>
+              <button class="btn" id="btnReset">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2><span class="bar"></span>작업지시 목록 <span class="dim" id="cntRows"></span></h2>
+            <div class="tools">
+              <div class="ms" id="flShip" style="min-width:150px">
+                <div class="f"><span style="display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600">출고일</span>
+                <button class="msbtn" id="flShipBtn">전체</button></div>
+                <div class="msmenu" id="flShipMenu"></div>
+              </div>
+              <div class="ms" id="flPic" style="min-width:140px">
+                <div class="f"><span style="display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600">지시자</span>
+                <button class="msbtn" id="flPicBtn">전체</button></div>
+                <div class="msmenu" id="flPicMenu"></div>
+              </div>
+              <label class="f" style="min-width:110px"><span>완료여부</span>
+                <select id="fl_완료"><option value="">전체</option><option value="no">미완료</option><option value="yes">완료</option></select></label>
+              <label class="f" style="min-width:120px"><span>작업진행중 여부</span>
+                <select id="fl_진행"><option value="">전체</option><option value="yes">작업진행중</option><option value="no">진행완료</option></select></label>
+              <div class="ms" id="flDates" style="min-width:150px">
+                <div class="f"><span style="display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600">작업지시일</span>
+                <button class="msbtn" id="flDatesBtn">전체</button></div>
+                <div class="msmenu" id="flDatesMenu"></div>
+              </div>
+              <label class="f grow"><span>검색 (품목·주문자·주문처·비고)</span><input type="text" id="fl_q" placeholder="검색어"></label>
+              <button class="btn" id="btnClearFl">필터 초기화</button>
+            </div>
+            <div class="tools" style="margin-bottom:8px">
+              <span class="sub" style="font-size:11px;align-self:center">인쇄 방향</span>
+              <div style="display:flex">
+                <button class="btn tog on" id="orientP">세로</button>
+                <button class="btn tog" id="orientL">가로</button>
+              </div>
+              <button class="btn dark" id="btnPrint">인쇄</button>
+              <button class="btn" id="btnCsv">CSV 내려받기</button>
+              <span class="dim" style="font-size:11px;align-self:center">인쇄 : 미완료 &amp; 작업진행중 아닌 건만</span>
+            </div>
+            <div class="tbl-wrap"><table id="tblRows"></table></div>
+          </div>
+        </div>
       </div>
-      <div class="toolbar">
-        <span class="muted small">인쇄 방향</span>
-        <div class="seg" id="orient"><button data-o="portrait" class="on">세로</button><button data-o="landscape">가로</button></div>
-        <button class="btn dark" id="printBtn">인쇄</button>
-        <button class="btn" id="csvBtn">CSV 내려받기</button>
-        <span class="muted small">인쇄 : 미완료 &amp; 작업진행중 아닌 건만</span>
-      </div>
-      <div class="table-wrap tall"><table class="tbl" id="orderTable"></table></div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<!-- 통합 관리 -->
-<section id="tab-manage" class="tab-page">
-  <div class="card">
-    <h2>통합 관리 (최종관리자)</h2>
-    <div class="filters">
-      <label>작업지시일<select id="m_odate"></select></label>
-      <label>완료여부<select id="m_done"><option value="">전체</option><option value="0">미완료</option><option value="1">완료</option></select></label>
-      <button class="btn dark" id="m_print">인쇄</button>
-    </div>
-    <div class="stats" id="m_stats"></div>
-    <div class="table-wrap tall"><table class="tbl" id="m_table"></table></div>
-  </div>
-</section>
-
-<!-- 통합관리(총수량) -->
-<section id="tab-total" class="tab-page">
-  <div class="card">
-    <h2>통합관리 (총수량)</h2>
-    <div class="filters">
-      <label>작업지시일<select id="t_odate"></select></label>
-      <label>완료여부<select id="t_done"><option value="">전체</option><option value="0">미완료</option><option value="1">완료</option></select></label>
-      <button class="btn dark" id="t_print">인쇄</button>
-    </div>
-    <div class="table-wrap tall"><table class="tbl" id="t_table"></table></div>
-  </div>
-</section>
-
-<!-- 규격 -->
-<section id="tab-specs" class="tab-page">
-  <div class="grid-specs">
-    <div class="card">
-      <h2 id="specTitle">규격 등록</h2>
-      <form id="specForm" autocomplete="off">
-        <label>품명<input id="sp_name" type="text" required></label>
-        <label>규격<input id="sp_spec" type="text"></label>
-        <div class="row2">
-          <label>입수량<input id="sp_per" type="number" min="1"></label>
-          <label>포장박스(아웃박스)<input id="sp_outbox" type="text"></label>
+    <!-- ============ 통합 관리 ============ -->
+    <section id="view-total" class="view">
+      <div class="card">
+        <h2><span class="bar"></span>통합 관리 (최종관리자)</h2>
+        <div class="tools">
+          <div class="ms" id="ttDates" style="min-width:170px">
+            <div class="f"><span style="display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600">작업지시일</span>
+            <button class="msbtn" id="ttDatesBtn">전체</button></div>
+            <div class="msmenu" id="ttDatesMenu"></div>
+          </div>
+          <label class="f" style="min-width:120px"><span>완료여부</span>
+            <select id="tt_완료"><option value="">전체</option><option value="no">미완료</option><option value="yes">완료</option></select></label>
+          <button class="btn dark" id="btnPrintTotal">인쇄</button>
         </div>
-        <div class="btn-row">
-          <button type="submit" class="btn primary grow">저장</button>
-          <button type="button" class="btn" id="specReset">초기화</button>
-        </div>
-      </form>
-    </div>
-    <div class="card">
-      <h2>규격 목록 <span class="muted" id="specCount"></span></h2>
-      <div class="toolbar">
-        <button class="btn" id="specTplBtn">양식 내려받기</button>
-        <button class="btn dark" id="specUploadBtn">파일로 한번에 등록</button>
-        <button class="btn" id="specExportBtn">현재 규격 내려받기</button>
-        <input type="file" id="specFile" accept=".xlsx,.xls,.csv" class="hidden">
-        <span class="muted small">엑셀(.xlsx) 또는 CSV · 같은 품명은 새 내용으로 바뀝니다</span>
+        <div class="cards" id="ttCards"></div>
+        <div class="tbl-wrap"><table id="tblTotal"></table></div>
       </div>
-      <div class="table-wrap tall"><table class="tbl" id="specTable"></table></div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<!-- 설정 -->
-<section id="tab-settings" class="tab-page">
-  <div class="grid-specs">
-    <div class="card">
-      <h2>내 이름</h2>
-      <p class="muted">지금 <b id="setName"></b> 이름으로 사용 중입니다. 작업지시를 저장하면 이 이름이 지시자로 들어갑니다.</p>
-      <button class="btn" id="changeNameBtn">이름 바꾸기</button>
-    </div>
-    <div class="card danger-card">
-      <h2>시즌 데이터 전체 삭제</h2>
-      <p class="muted">시즌이 끝나면 작업지시를 모두 지우고 새로 시작할 수 있습니다. 작업No.도 1번부터 다시 시작합니다. 지운 데이터는 되살릴 수 없으니 먼저 CSV로 내려받아 두세요.</p>
-      <div class="btn-row"><button class="btn" id="backupBtn">전체 작업지시 CSV 내려받기</button></div>
-      <label class="check"><input type="checkbox" id="resetSpecs"> 규격 목록도 함께 삭제</label>
-      <label>확인을 위해 <b>삭제</b> 라고 입력하세요<input id="resetConfirm" type="text" placeholder="삭제"></label>
-      <button class="btn danger block" id="resetBtn" disabled>전체 삭제</button>
-      <p class="muted small" id="resetInfo"></p>
-    </div>
-  </div>
-</section>
-</main>
+    <!-- ============ 통합관리(총수량) ============ -->
+    <section id="view-sum" class="view">
+      <div class="card">
+        <h2><span class="bar"></span>통합관리 (총수량)</h2>
+        <div class="tools">
+          <div class="ms" id="sumDates" style="min-width:170px">
+            <div class="f"><span style="display:block;font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:600">작업지시일</span>
+            <button class="msbtn" id="sumDatesBtn">전체</button></div>
+            <div class="msmenu" id="sumDatesMenu"></div>
+          </div>
+          <label class="f" style="min-width:120px"><span>완료여부</span>
+            <select id="sum_완료"><option value="">전체</option><option value="no">미완료</option><option value="yes">완료</option></select></label>
+          <button class="btn dark" id="btnPrintSum">인쇄</button>
+        </div>
+        <div class="tbl-wrap"><table id="tblSum"></table></div>
+      </div>
+    </section>
 
-<div id="toast" class="toast"></div>
+    <!-- ============ 규격 ============ -->
+    <section id="view-spec" class="view">
+      <div class="split">
+        <div class="card">
+          <h2><span class="bar"></span><span id="specTitle">규격 등록</span></h2>
+          <label class="f"><span>품명</span><input type="text" id="s_품명"></label>
+          <label class="f"><span>규격</span><input type="text" id="s_규격"></label>
+          <div class="grid2">
+            <label class="f"><span>입수량</span><input type="number" id="s_입수량" min="0"></label>
+            <label class="f"><span>포장박스(아웃박스)</span><input type="text" id="s_포장박스"></label>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn pri" id="btnSpecSave" style="flex:1">저장</button>
+            <button class="btn" id="btnSpecReset">초기화</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2><span class="bar"></span>규격 목록 <span class="dim" id="cntSpec"></span></h2>
+          <div class="tools" style="margin-bottom:8px">
+            <button class="btn" id="btnSpecTpl">양식 내려받기</button>
+            <button class="btn dark" id="btnSpecUpload">파일로 한번에 등록</button>
+            <button class="btn" id="btnSpecExport">현재 규격 내려받기</button>
+            <input type="file" id="specFile" accept=".xlsx,.xls,.csv" style="display:none">
+            <span class="dim" style="font-size:11px;align-self:center">엑셀(.xlsx) 또는 CSV · 같은 품명은 새 내용으로 바뀝니다</span>
+          </div>
+          <div class="tbl-wrap"><table id="tblSpec"></table></div>
+        </div>
+      </div>
+    </section>
+    <!-- ============ 설정 ============ -->
+    <section id="view-set" class="view">
+      <div class="split">
+        <div class="card">
+          <h2><span class="bar"></span>내 이름</h2>
+          <div class="sub" style="font-size:12px;margin-bottom:10px">지금 <b id="setName"></b> 이름으로 사용 중입니다. 작업지시를 저장하면 이 이름이 <b>지시자</b>로 들어갑니다.</div>
+          <button class="btn" id="btnChangeName2">이름 바꾸기</button>
+        </div>
+        <div class="card">
+          <h2><span class="bar" style="background:#a3271b"></span>시즌 데이터 전체 삭제</h2>
+          <div class="sub" style="font-size:12px;margin-bottom:10px">시즌이 끝나면 작업지시를 모두 지우고 새로 시작합니다. 작업No.도 1번부터 다시 시작합니다.
+            지운 데이터는 되살릴 수 없으니 먼저 CSV로 내려받아 두세요.</div>
+          <div style="margin-bottom:10px"><button class="btn" id="btnBackup">전체 작업지시 CSV 내려받기</button></div>
+          <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px">
+            <input type="checkbox" class="chk" id="rs_spec"> 규격 목록도 함께 삭제</label>
+          <label class="f"><span>확인을 위해 <b>삭제</b> 라고 입력하세요</span><input type="text" id="rs_confirm" placeholder="삭제"></label>
+          <button class="btn danger" id="btnResetSeason" disabled style="width:100%">전체 삭제</button>
+          <div class="dim" style="font-size:11px;margin-top:8px" id="rs_info"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
 <div id="printArea"></div>
-<style id="pageStyle"></style>
+<div id="toast"></div>
+<div id="loading"><div class="spin"></div></div>
 
 <script src="config.js"></script>
-<script>
-  // 수파베이스 주소가 있을 때만 라이브러리를 불러옵니다.
-  if (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL) {
-    document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"><\/script>');
-  }
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
