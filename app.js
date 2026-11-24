@@ -22,6 +22,7 @@ function supabaseStore() {
     async addSpec(s) { return chk(await sb.from('specs').insert(s).select().single()); },
     async updateSpec(id, s) { return chk(await sb.from('specs').update(s).eq('id', id).select().single()); },
     async deleteSpec(id) { chk(await sb.from('specs').delete().eq('id', id)); },
+    async upsertSpecs(rows) { chk(await sb.from('specs').upsert(rows, { onConflict: 'name' })); },
     async reset(includeSpecs) { chk(await sb.rpc('reset_season', { include_specs: includeSpecs })); },
     subscribe(cb) {
       sb.channel('wo-changes')
@@ -48,6 +49,7 @@ function localStore() {
     async addSpec(s) { if (db.specs.some(x => x.name === s.name)) throw new Error('duplicate key'); const r = Object.assign({ id: db.seqS++ }, s); db.specs.push(r); save(); return clone(r); },
     async updateSpec(id, s) { const r = db.specs.find(x => x.id === id); Object.assign(r, s); save(); return clone(r); },
     async deleteSpec(id) { db.specs = db.specs.filter(x => x.id !== id); save(); },
+    async upsertSpecs(rows) { rows.forEach(r => { const e = db.specs.find(x => x.name === r.name); if (e) Object.assign(e, r); else db.specs.push(Object.assign({ id: db.seqS++ }, r)); }); save(); },
     async reset(includeSpecs) { db.orders = []; db.seqO = 1; if (includeSpecs) { db.specs = []; db.seqS = 1; } save(); },
     subscribe() {}
   };
@@ -419,6 +421,49 @@ $('#specForm').addEventListener('submit', async (e) => {
     state.specs.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     resetSpecForm(); renderAll();
   } catch (err) { fail(/duplicate|unique/i.test(err.message) ? new Error('같은 품명이 이미 있어요') : err); }
+});
+
+/* ---------- 규격: 양식 / 파일 업로드 ---------- */
+const SPEC_HEAD = ['품명', '규격', '입수량', '포장박스'];
+function writeSpecBook(rows, filename) {
+  if (!window.XLSX) { toast('엑셀 기능을 불러오지 못했어요. 새로고침 해주세요'); return; }
+  const ws = XLSX.utils.aoa_to_sheet([SPEC_HEAD].concat(rows));
+  ws['!cols'] = [{ wch: 22 }, { wch: 26 }, { wch: 8 }, { wch: 10 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '규격');
+  XLSX.writeFile(wb, filename);
+}
+$('#specTplBtn').addEventListener('click', () => writeSpecBook([['예) 명품S2호', '500ML', 5, '3']], '규격_양식.xlsx'));
+$('#specExportBtn').addEventListener('click', () => {
+  if (!state.specs.length) { toast('등록된 규격이 없어요'); return; }
+  writeSpecBook(state.specs.map(s => [s.name, s.spec || '', s.per_box ?? '', s.outbox || '']), `규격_${today()}.xlsx`);
+});
+$('#specUploadBtn').addEventListener('click', () => $('#specFile').click());
+$('#specFile').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (!window.XLSX) { toast('엑셀 기능을 불러오지 못했어요. 새로고침 해주세요'); return; }
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+    const hi = aoa.findIndex(r => r.some(c => String(c).trim() === '품명'));
+    if (hi < 0) { toast('첫 줄에 "품명" 칸이 있는 양식을 사용해 주세요'); return; }
+    const head = aoa[hi].map(c => String(c).trim());
+    const col = (...names) => head.findIndex(h => names.includes(h));
+    const ci = { name: col('품명'), spec: col('규격', '내용'), per: col('입수량'), out: col('포장박스', '아웃박스', '포장박스(아웃박스)') };
+    const map = new Map();
+    aoa.slice(hi + 1).forEach(r => {
+      const name = String(r[ci.name] ?? '').trim();
+      if (!name || name.startsWith('예)')) return;
+      map.set(name, { name, spec: ci.spec >= 0 ? String(r[ci.spec]).trim() : '', per_box: ci.per >= 0 ? num(String(r[ci.per]).replace(/,/g, '')) : null, outbox: ci.out >= 0 ? String(r[ci.out]).trim() : '' });
+    });
+    const rows = Array.from(map.values());
+    if (!rows.length) { toast('등록할 규격이 없어요'); return; }
+    const upd = rows.filter(r => state.specs.some(s => s.name === r.name)).length;
+    if (!confirm(`규격 ${rows.length}건을 등록할까요?\n새로 추가 ${rows.length - upd}건, 기존 품명 수정 ${upd}건`)) return;
+    await store.upsertSpecs(rows);
+    state.specs = await store.listSpecs(); renderAll();
+    toast(`규격 ${rows.length}건 등록했어요`);
+  } catch (err) { fail(err); }
 });
 
 /* ---------- 설정: 전체 삭제 ---------- */

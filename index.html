@@ -141,6 +141,13 @@
     </div>
     <div class="card">
       <h2>규격 목록 <span class="muted" id="specCount"></span></h2>
+      <div class="toolbar">
+        <button class="btn" id="specTplBtn">양식 내려받기</button>
+        <button class="btn dark" id="specUploadBtn">파일로 한번에 등록</button>
+        <button class="btn" id="specExportBtn">현재 규격 내려받기</button>
+        <input type="file" id="specFile" accept=".xlsx,.xls,.csv" class="hidden">
+        <span class="muted small">엑셀(.xlsx) 또는 CSV · 같은 품명은 새 내용으로 바뀝니다</span>
+      </div>
       <div class="table-wrap tall"><table class="tbl" id="specTable"></table></div>
     </div>
   </div>
@@ -178,6 +185,7 @@
     document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"><\/script>');
   }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
